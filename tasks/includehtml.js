@@ -12,10 +12,9 @@ module.exports = function (grunt) {
     var _ = grunt.util._;
     var url = require('url');
 
-    var reg = /@@include\([^()]*\)/g;
-    var pathReg = /\(\s*(("[^"]*")|('[^']*'))/;     //获取@@include("./test2.html")中的("./test2.html" 字符
-    var pathReg_2 = /(^\(\s*("|')\s*)|(\s*("|')$)/g;    //过滤("./test2.html" 字符中的多余字符
-    var jsonReg = /\{[\S\s]*\}/g;
+    var reg = /@{2}include\(\s*["'].*\s*["']\s*(,\s*\{[\s\S]*?\})?\)/g;
+    var pathReg = /["'] *.*? *["']/;     //获取@@include("XXX")中的"XXX"字符
+    var jsonReg = /\{[\S\s]*?\}/g;
     var argReg = /@{2}(\{|)[a-zA-Z0-9_]+(\.[a-zA-Z0-9_]+)*(\s|)(\}|)/g;     //匹配变量，变量写法可以为@@key.value或@@{key.value}
 
     var taskName = "includereplace";
@@ -83,7 +82,7 @@ module.exports = function (grunt) {
 
             //@@include替换
             arrs.forEach(function (arr) {
-                var fileUrl = arr.match(pathReg)[0].replace(pathReg_2, '');
+                var fileUrl = arr.match(pathReg)[0].replace(/"|'| /g, '');
 
                 try {
                     var json = arr.match(jsonReg);

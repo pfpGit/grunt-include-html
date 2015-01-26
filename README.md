@@ -1,4 +1,4 @@
-﻿#grunt-include-html:实现html引用
+#grunt-include-html:实现html引用
 
 ###使用方法:
 安装:在grunt目录下安装
