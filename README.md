@@ -10,12 +10,12 @@
         @@include("parts.html" , {
             var1:"var1",
             var2:"var2"
-        })
+        })<br>
 然后再parts.html中添加@@var1即可引用参数，如果在parts中这样引用：
         @@var1isverygood，插件无法识别到@@var1因为后面的字符相连，正则无法匹配
         该插件提供{}符号作为分隔符，即可以改为@@{var1}isverygood，插件即可正常识别
 
-也可以在Gruntfile.js中进行配置全局参数
+也可以在Gruntfile.js中进行配置全局参数<br>
         includereplace: {
             options:{
                 globals:{
