@@ -27,7 +27,6 @@ module.exports = function (grunt) {
 
         //获取全局变量并且合并
         var globals = ("options" in config) ? (config.options.globals || {}) : {};
-        var noConfig = ("options" in config) ? !!config.options.ncon : false;
 
         config = config[task];
 
@@ -40,16 +39,6 @@ module.exports = function (grunt) {
 
         var date = new Date();
 
-        //获取文件缓存的信息
-        if(!noConfig){
-            try{
-                var fileConfig = !noConfig ? grunt.file.readJSON(fileConfigPath) : {};
-            }catch(e){
-                fileConfig = {}
-            }
-            var newFileConfig = {};
-        }
-
         //遍历匹配文件
         this.files.forEach(function (file) {
             for (var i = 0; i < file.src.length; i++) {
@@ -59,15 +48,7 @@ module.exports = function (grunt) {
                 //检查路径和文件合法性，同时忽略带下划线前缀文件
                 if (!grunt.file.exists(filePath) || !grunt.file.isFile(filePath) || fileName.match(/^_+/g)) continue;
 
-                var str = grunt.file.read(filePath);
-
-                //如果允许使用文件配置
-                if(!noConfig){
-                    newFileConfig[filePath] = getMd5(str);
-                    if((filePath in fileConfig) && fileConfig[filePath]===newFileConfig[filePath])continue;
-                }
-
-                str = replace(str, filePath);
+                var str = replace(grunt.file.read(filePath), filePath);
 
                 grunt.log.debug('Saving to', file.dest);
                 grunt.file.write(file.dest, str);
@@ -77,10 +58,6 @@ module.exports = function (grunt) {
             var index;
             (index = destFileArr.indexOf(file.dest)) >= 0 && [].splice.call(destFileArr, index, 1);
         });
-
-        if(!noConfig && !_.isEmpty(newFileConfig)){
-            grunt.file.write(fileConfigPath , JSON.stringify(newFileConfig))
-        }
 
         //删除多余文件
         destFileArr.forEach(function (file) {
@@ -97,11 +74,7 @@ module.exports = function (grunt) {
             } else return [];
         }
 
-        function getMd5(str) {
-            return crypto.createHash("md5").update(str).digest("hex");
-        }
-
-        function replace(str, filePath) {
+        function replace(str, filePath, notChange) {
             var arrs = str.match(reg);
 
             if (!arrs) return str;
@@ -109,6 +82,19 @@ module.exports = function (grunt) {
             //@@include替换
             arrs.forEach(function (arr) {
                 var fileUrl = arr.match(pathReg)[0].replace(/"|'| /g, '');
+                fileUrl = url.resolve(filePath, fileUrl);
+
+                var conContain;
+                if (fileUrl in cache) {
+                    conContain = cache[fileUrl];
+                } else {
+                    var txt = replace(grunt.file.read(fileUrl), fileUrl);
+
+                    conContain = cache[fileUrl] = {
+                        content: txt,
+                        args: txt.match(argReg) || []
+                    };
+                }
 
                 try {
                     var json = arr.match(jsonReg);
@@ -117,20 +103,6 @@ module.exports = function (grunt) {
                     _.extend(globals, json || {});
                 } catch (e) {
                     console.log(e)
-                }
-
-                fileUrl = url.resolve(filePath, fileUrl);
-
-                var conContain;
-                if (fileUrl in cache) {
-                    conContain = cache[fileUrl];
-                } else {
-                    var txt = replace(grunt.file.read(fileUrl), fileUrl)
-
-                    conContain = cache[fileUrl] = {
-                        content: txt,
-                        args: txt.match(argReg) || []
-                    };
                 }
 
                 str = str.replace(arr, function (m) {
@@ -155,7 +127,6 @@ module.exports = function (grunt) {
                     return val;
                 });
             });
-
             return str;
         }
     });
