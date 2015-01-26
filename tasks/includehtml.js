@@ -147,7 +147,10 @@ module.exports = function (grunt) {
                                     if ((i == arg.length - 1) && (typeof o[arg[i]]=='string'||'number')) {
                                         val = val.replace(reTxt , o[arg[i]]);
                                     } else o = o[arg[i]];
-                                } else break;
+                                } else{
+                                    val = val.replace(reTxt , "");
+                                    break;
+                                }
                             }
                         }
                     }
