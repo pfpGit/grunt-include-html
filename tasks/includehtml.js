@@ -27,6 +27,7 @@ module.exports = function (grunt) {
 
         //获取全局变量并且合并
         var globals = ("options" in config) ? (config.options.globals || {}) : {};
+        var noConfig = ("options" in config) ? !!config.options.ncon : false;
 
         config = config[task];
 
@@ -39,6 +40,16 @@ module.exports = function (grunt) {
 
         var date = new Date();
 
+        //获取文件缓存的信息
+        if(!noConfig){
+            try{
+                var fileConfig = !noConfig ? grunt.file.readJSON(fileConfigPath) : {};
+            }catch(e){
+                fileConfig = {}
+            }
+            var newFileConfig = {};
+        }
+
         //遍历匹配文件
         this.files.forEach(function (file) {
             for (var i = 0; i < file.src.length; i++) {
@@ -50,6 +61,9 @@ module.exports = function (grunt) {
 
                 var str = replace(grunt.file.read(filePath), filePath);
 
+                //如果文件MD5值跟缓存相同，则不进行复写
+                if(!noConfig && checkCache(file.dest , str)) continue;
+
                 grunt.log.debug('Saving to', file.dest);
                 grunt.file.write(file.dest, str);
                 grunt.log.ok('Processed ' + filePath);
@@ -58,6 +72,10 @@ module.exports = function (grunt) {
             var index;
             (index = destFileArr.indexOf(file.dest)) >= 0 && [].splice.call(destFileArr, index, 1);
         });
+
+        if(!noConfig && !_.isEmpty(newFileConfig)){
+            grunt.file.write(fileConfigPath , JSON.stringify(newFileConfig))
+        }
 
         //删除多余文件
         destFileArr.forEach(function (file) {
@@ -72,6 +90,15 @@ module.exports = function (grunt) {
             if (grunt.file.exists(config.dest) && !grunt.file.isFile(config.dest)) {
                 return grunt.file.expand(config.dest + "**/*");
             } else return [];
+        }
+
+        //检查缓存是否存在
+        function checkCache(key , value) {
+            value = crypto.createHash("md5").update(value).digest("hex");
+            newFileConfig[key] = value;
+            if((key in fileConfig) && fileConfig[key]===value)return true;
+
+            return false;
         }
 
         function replace(str, filePath, notChange) {
