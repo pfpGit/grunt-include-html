@@ -79,8 +79,10 @@ module.exports = function (grunt) {
 
         //删除多余文件
         destFileArr.forEach(function (file) {
-            grunt.log.ok('Deleted ' + file);
-            grunt.file.delete(file);
+            if(grunt.file.isFile(file)){
+                grunt.log.ok('Deleted ' + file);
+                grunt.file.delete(file);
+            }
         });
 
         console.log("time："+((new Date()) - date)+"ms");
@@ -88,6 +90,7 @@ module.exports = function (grunt) {
         //获取目标文件夹下的文件列表
         function getDestFiles() {
             if (grunt.file.exists(config.dest) && !grunt.file.isFile(config.dest)) {
+                var fileArr = grunt.file.expand(config.dest + "**/*");
                 return grunt.file.expand(config.dest + "**/*");
             } else return [];
         }
