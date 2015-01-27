@@ -37,6 +37,7 @@ module.exports = function (grunt) {
         var cache = {};
 
         var destFileArr = getDestFiles();
+        var destStr = ""
 
         var date = new Date();
 
@@ -70,6 +71,7 @@ module.exports = function (grunt) {
             }
 
             var index;
+            destStr += file.dest+",";
             (index = destFileArr.indexOf(file.dest)) >= 0 && [].splice.call(destFileArr, index, 1);
         });
 
@@ -79,7 +81,7 @@ module.exports = function (grunt) {
 
         //删除多余文件
         destFileArr.forEach(function (file) {
-            if(grunt.file.isFile(file)){
+            if(grunt.file.isFile(file) || (grunt.file.isDir(file) && destStr.indexOf(file+"/")==-1)){
                 grunt.log.ok('Deleted ' + file);
                 grunt.file.delete(file);
             }

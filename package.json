@@ -1,6 +1,6 @@
 {
   "name": "grunt-include-html",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "include and replace",
   "main": "tasks/includehtml.js",
   "scripts": {
