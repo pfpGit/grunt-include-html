@@ -19,7 +19,9 @@ module.exports = function (grunt) {
     var argReg = /@{2}(\{|)[a-zA-Z0-9_]+(\.[a-zA-Z0-9_]+)*(\s|)(\}|)/g;     //匹配变量，变量写法可以为@@key.value或@@{key.value}
 
     var taskName = "includereplace";
-    var fileConfigPath = "./config.ir";
+
+    var dex = __filename.split("\\");
+    var fileConfigPath = dex.slice(0 , dex.length-2).join("/")+"/config.ir";
 
     grunt.registerMultiTask(taskName, 'Include files and replace variables', function () {
         var task = this.nameArgs.split(":")[1];
@@ -36,11 +38,6 @@ module.exports = function (grunt) {
 
         var cache = {};
 
-        var destFileArr = getDestFiles();
-        var destStr = ""
-
-        var date = new Date();
-
         //获取文件缓存的信息
         if(!noConfig){
             try{
@@ -51,6 +48,9 @@ module.exports = function (grunt) {
             var newFileConfig = {};
         }
 
+        var destFileArr = getDestFiles();
+        var destStr = "";
+        var date = new Date();
         //遍历匹配文件
         this.files.forEach(function (file) {
             for (var i = 0; i < file.src.length; i++) {
@@ -86,7 +86,6 @@ module.exports = function (grunt) {
                 grunt.file.delete(file);
             }
         });
-
         console.log("time："+((new Date()) - date)+"ms");
 
         //获取目标文件夹下的文件列表
@@ -106,7 +105,7 @@ module.exports = function (grunt) {
             return false;
         }
 
-        function replace(str, filePath, notChange) {
+        function replace(str, filePath) {
             var arrs = str.match(reg);
 
             if (!arrs) return str;
