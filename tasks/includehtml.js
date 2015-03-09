@@ -13,10 +13,20 @@ module.exports = function (grunt) {
     var url = require('url');
     var crypto = require('crypto');
 
+    //匹配@@include("")
     var reg = /@{2}include\(\s*["'].*\s*["']\s*(,\s*\{[\s\S]*?\})?\)/g;
-    var pathReg = /["'] *.*? *["']/;     //获取@@include("XXX")中的"XXX"字符
+
+    //获取@@include("XXX")中的"XXX"字符
+    var pathReg = /["'] *.*? *["']/;
+
+    //判断@@include中的json字符串
     var jsonReg = /\{[\S\s]*\}/g;
-    var argReg = /@{2}(\{|)[a-zA-Z0-9_]+(\.[a-zA-Z0-9_]+)*(\s|)(\}|)/g;     //匹配变量，变量写法可以为@@key.value或@@{key.value}
+
+    //匹配变量，变量写法可以为@@key.value或@@{key.value}
+    var argReg = /@{2}(\{|)[a-zA-Z0-9_]+(\.[a-zA-Z0-9_]+)*(\s|)(\}|)/g;
+
+    //匹配<!--#remove-->****<!--/remove-->，并且删除****中的内容
+    var removeReg = /<!-*#remove-*>[\s\S]*?<!-*\/remove-*>/g
 
     var taskName = "includereplace";
 
@@ -60,7 +70,7 @@ module.exports = function (grunt) {
                 //检查路径和文件合法性，同时忽略带下划线前缀文件
                 if (!grunt.file.exists(filePath) || !grunt.file.isFile(filePath) || fileName.match(/^_+/g)) continue;
 
-                var str = replace(grunt.file.read(filePath), filePath);
+                var str = replace(grunt.file.read(filePath), filePath).replace(removeReg , '');
 
                 //如果文件MD5值跟缓存相同，则不进行复写
                 if(!noConfig && checkCache(file.dest , str)) continue;
@@ -104,10 +114,26 @@ module.exports = function (grunt) {
             return false;
         }
 
+        //由于underscore的clone是浅拷贝，所以实现一个略深的拷贝封装
+        function deepClone(obj){
+            if (typeof(obj) != 'object') return obj;
+
+            if (obj instanceof Array) return obj.slice(0);
+
+            var re = {};
+            for (var k in obj) {
+                re[k] = deepClone(obj[k]);
+            }
+            return re;
+        }
+
+        //替换逻辑
         function replace(str, filePath) {
             var arrs = str.match(reg);
 
             if (!arrs) return str;
+
+            var o = deepClone(globals);
 
             //@@include替换
             arrs.forEach(function (arr) {
@@ -130,37 +156,34 @@ module.exports = function (grunt) {
                     var json = arr.match(jsonReg);
                     //之所以使用eval而不使用JSON.parse是因为eval对转化的兼容性更好
                     json = json && eval("("+json[0].replace(/\r\n/,'')+")");
-                    _.extend(globals, json || {});
+                    _.extend(o, json || {});
                 } catch (e) {
                     console.log(e)
                 }
 
+                //替换变量的值
                 str = str.replace(arr, function (m) {
                     var val = conContain.content;
                     var args;
 
-                    if (!_.isEmpty(globals) && !!(args = [].slice.call(conContain.args)).length) {
-                        while (args.length) {
-                            var reTxt = args.pop();
-                            var arg = ''.split.call(reTxt.replace(/@{2}|\{|\}|\s/g,''), '.');
+                    if (_.isEmpty(o) || !(args = [].slice.call(conContain.args)).length) return val;
 
-                            var o = globals;
-                            for (var i = 0; i < arg.length; i++) {
-                                if (arg[i] in o) {
-                                    if ((i == arg.length - 1) && (typeof o[arg[i]]=='string'||'number')) {
-                                        val = val.replace(reTxt , o[arg[i]]);
-                                    } else o = o[arg[i]];
-                                } else{
-                                    val = val.replace(reTxt , "");
-                                    break;
-                                }
-                            }
+                    while (args.length) {
+                        var reTxt = args.pop();
+                        var arg = ''.split.call(reTxt.replace(/@{2}|\{|\}|\s/g,''), '.');
+
+                        for (var i = 0; i < arg.length; i++) {
+                            if (!(arg[i] in o)) break;
+
+                            if ((i == arg.length - 1) && (typeof o[arg[i]]=='string'||'number')) {
+                                val = val.replace(reTxt , o[arg[i]]);
+                            } else o = o[arg[i]];
                         }
                     }
                     return val;
                 });
             });
-            return str.replace(/<!-*#remove-*>[\s\S]*?<!-*\/remove-*>/g , '');
+            return str;
         }
     });
 };
