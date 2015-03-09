@@ -91,7 +91,6 @@ module.exports = function (grunt) {
         //获取目标文件夹下的文件列表
         function getDestFiles() {
             if (grunt.file.exists(config.dest) && !grunt.file.isFile(config.dest)) {
-                var fileArr = grunt.file.expand(config.dest + "**/*");
                 return grunt.file.expand(config.dest + "**/*");
             } else return [];
         }
@@ -161,7 +160,7 @@ module.exports = function (grunt) {
                     return val;
                 });
             });
-            return str;
+            return str.replace(/<!-*#remove-*>[\s\S]*?<!-*\/remove-*>/g , '');
         }
     });
 };
