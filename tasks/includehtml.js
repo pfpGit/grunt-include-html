@@ -134,6 +134,17 @@ module.exports = function (grunt) {
             if (!arrs) return str;
 
             var o = deepClone(globals);
+            var outerArgs = str.match(argReg)||[];
+
+            str = str.replace(argReg , function(reTxt){
+                if(reTxt=="@@include")return reTxt;
+
+                reValSync(reTxt , o , function(result){
+                    reTxt = result
+                })
+
+                return reTxt
+            })
 
             //@@include替换
             arrs.forEach(function (arr) {
@@ -170,20 +181,30 @@ module.exports = function (grunt) {
 
                     while (args.length) {
                         var reTxt = args.pop();
-                        var arg = ''.split.call(reTxt.replace(/@{2}|\{|\}|\s/g,''), '.');
 
-                        for (var i = 0; i < arg.length; i++) {
-                            if (!(arg[i] in o)) break;
-
-                            if ((i == arg.length - 1) && (typeof o[arg[i]]=='string'||'number')) {
-                                val = val.replace(reTxt , o[arg[i]]);
-                            } else o = o[arg[i]];
-                        }
+                        reValSync(reTxt , o , function(result){
+                            val = val.replace(reTxt , result);
+                        })
                     }
                     return val;
                 });
             });
             return str;
         }
+
+        //变量更改方法
+        function reValSync(reTxt , o , callback){
+            var arg = ''.split.call(reTxt.replace(/@{2}|\{|\}|\s/g,''), '.');
+
+            for (var i = 0; i < arg.length; i++) {
+                if (!(arg[i] in o)) break;
+
+                if ((i == arg.length - 1) && (typeof o[arg[i]]=='string'||'number')) {
+                    callback(o[arg[i]]);
+                    break;
+                } else o = o[arg[i]];
+            }
+        }
+
     });
 };
