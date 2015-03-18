@@ -66,3 +66,5 @@ html task下的变量将会覆盖全局，但是如果@@include()中有该变量
 
 插件带有缓存机制，会仅编译内容发生改变的文件，该功能会在插件目录下生成一个config.ir文件<br>
 如果不想使用该功能，可以在options中添加 ncon:true;使用后则每次都会编译所有文件
+
+gulp版：[gulp-include-html](https://github.com/whxaxes/gulp-include-html)
