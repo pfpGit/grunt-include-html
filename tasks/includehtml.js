@@ -101,7 +101,11 @@ module.exports = function (grunt) {
         //获取目标文件夹下的文件列表
         function getDestFiles() {
             if (grunt.file.exists(config.dest) && !grunt.file.isFile(config.dest)) {
-                return grunt.file.expand(config.dest + "**/*");
+                try{
+                    return grunt.file.expand(config.dest + "**/*");
+                }catch(e){
+                    return []
+                }
             } else return [];
         }
 
@@ -129,12 +133,11 @@ module.exports = function (grunt) {
 
         //替换逻辑
         function replace(str, filePath) {
-            var arrs = str.match(reg);
+            var arrs = str.match(reg) || [];
 
-            if (!arrs) return str;
+            if (!arrs.length && !str.match(argReg)) return str;
 
             var o = deepClone(globals);
-            var outerArgs = str.match(argReg)||[];
 
             str = str.replace(argReg , function(reTxt){
                 if(reTxt=="@@include")return reTxt;
